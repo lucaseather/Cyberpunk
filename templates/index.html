@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyberpunk Dictionary</title>
+
+    <!-- 重新引入 Cyberpunk 2077 風格 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cyberpunk2077-css@latest/cyberpunk2077.min.css">
+
+    <style>
+        body {
+            background-color: black;
+            color: #0ff;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+            font-size: 18px;
+            background-color: black;
+            border: 2px solid #0ff;
+            color: white;
+            text-align: center;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .neon-text {
+            font-size: 30px;
+            text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 15px #ff0;
+        }
+        .cyberpunk-btn {
+            background: #0ff;
+            color: black;
+            padding: 10px 20px;
+            font-weight: bold;
+            border: 3px solid #ff0;
+            transition: 0.3s;
+        }
+        .cyberpunk-btn:hover {
+            background: #ff0;
+            color: black;
+            border: 3px solid #0ff;
+        }
+        .results {
+            text-align: left;
+            margin-top: 20px;
+            padding: 10px;
+            border: 2px solid #0ff;
+            background: rgba(0, 0, 0, 0.8);
+        }
+        /* 進度條樣式 */
+        #loading-bar {
+            width: 0%;
+            height: 5px;
+            background: #0ff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- 進度條 -->
+    <div id="loading-bar"></div>
+
+    <div class="container">
+        <h1 class="neon-text">Cyberpunk Dictionary</h1>
+        
+        <input type="text" id="word" placeholder="輸入單字">
+        <button class="cyberpunk-btn" onclick="translateWord()">查詢</button>
+
+        <div id="results" class="results">
+            <p id="translation"></p>
+            <div id="examples"></div>
+            <div id="similar-words"></div>
+        </div>
+
+        <button class="cyberpunk-btn" onclick="speakWord()">🔊 朗讀單字</button>
+        <button class="cyberpunk-btn" onclick="addBookmark()">📌 加入書籤</button>
+        <button class="cyberpunk-btn" onclick="viewBookmarks()">📖 查看書籤</button>
+        <button class="cyberpunk-btn" onclick="startQuiz()">🎯 開始測驗</button>
+    </div>
+
+    <script>
+        async function translateWord() {
+            let word = document.getElementById("word").value.trim();
+            if (!word) {
+                alert("請輸入單字！");
+                return;
+            }
+
+            // 1️⃣ 顯示進度條
+            document.getElementById("loading-bar").style.width = "30%";
+
+            try {
+                let response = await fetch("/translate", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({"word": word})
+                });
+
+                // 2️⃣ 進度條增加
+                document.getElementById("loading-bar").style.width = "60%";
+
+                if (!response.ok) {
+                    alert("API 回應錯誤，請稍後再試！");
+                    return;
+                }
+
+                let data = await response.json();
+                document.getElementById("translation").innerHTML = `<strong>翻譯：</strong> ${data.translated_sentences[0] || "無翻譯結果"}`;
+
+                let exampleList = document.getElementById("examples");
+                exampleList.innerHTML = "<strong>📖 例句：</strong><br>";
+                if (data.example_sentences.length > 0) {
+                    let uniqueExamples = [...new Set(data.example_sentences)];
+                    uniqueExamples.forEach((sentence, index) => {
+                        exampleList.innerHTML += `<p>👉 ${sentence} <br>💡 ${data.translated_sentences[index]}</p>
+                                                  <button class="cyberpunk-btn" onclick="speakSentence('${sentence}')">朗讀例句</button>`;
+                    });
+                } else {
+                    exampleList.innerHTML += "<p>未找到適合的例句</p>";
+                }
+
+                let similarList = document.getElementById("similar-words");
+                similarList.innerHTML = "<strong>🔍 相似單字：</strong> " + (data.similar_words.length > 0 ? data.similar_words.join(", ") : "未找到");
+
+                // 3️⃣ 進度條完成
+                document.getElementById("loading-bar").style.width = "100%";
+                setTimeout(() => { document.getElementById("loading-bar").style.width = "0%"; }, 500);
+
+            } catch (error) {
+                alert("發生錯誤，請檢查網絡連線！");
+                document.getElementById("loading-bar").style.width = "0%";
+            }
+        }
+
+        function speakWord() {
+            let word = document.getElementById("word").value.trim();
+            if (!word) {
+                alert("請輸入單字來朗讀！");
+                return;
+            }
+            let speech = new SpeechSynthesisUtterance(word);
+            speech.lang = "en-US"; 
+            window.speechSynthesis.speak(speech);
+        }
+
+        function speakSentence(sentence) {
+            let speech = new SpeechSynthesisUtterance(sentence);
+            speech.lang = "en-US"; 
+            window.speechSynthesis.speak(speech);
+        }
+
+        function addBookmark() {
+            let word = document.getElementById("word").value.trim();
+            if (!word) {
+                alert("請輸入單字來加入書籤！");
+                return;
+            }
+
+            fetch("/bookmark", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({"word": word})
+            }).then(() => {
+                alert(`${word} 已加入書籤！`);
+            });
+        }
+
+        function viewBookmarks() {
+            window.location.href = "/bookmarks";  // 跳轉到書籤頁面
+        }
+
+        async function startQuiz() {
+            let response = await fetch("/quiz");
+            let data = await response.json();
+            alert("測驗題目：" + data.quiz_word);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📖 我的書籤</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cyberpunk2077-css@latest/cyberpunk2077.min.css">
+    <style>
+        body {
+            background-color: black;
+            color: #0ff;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 2px solid #0ff;
+            padding: 10px;
+            text-align: left;
+        }
+        .cyberpunk-btn {
+            margin-top: 20px;
+            background: #0ff;
+            color: black;
+            padding: 10px 20px;
+            font-weight: bold;
+            border: 3px solid #ff0;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .cyberpunk-btn:hover {
+            background: #ff0;
+            color: black;
+            border: 3px solid #0ff;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="neon-text">📖 我的書籤</h1>
+    <table>
+        <tr>
+            <th>單字</th>
+            <th>詞性</th>
+            <th>意思</th>
+        </tr>
+        {% if bookmarks %}
+            {% for word, definitions in bookmarks.items() %}
+                {% for part_of_speech, meanings in definitions.items() %}
+                <tr>
+                    <td>{{ word }}</td>
+                    <td>{{ part_of_speech }}</td>
+                    <td>{{ meanings | join(", ") }}</td>
+                </tr>
+                {% endfor %}
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="3">暫無書籤</td>
+            </tr>
+        {% endif %}
+    </table>
+    <br>
+    <button onclick="window.location.href='/'" class="cyberpunk-btn">🏠 返回主畫面</button>
+</body>
+</html>
